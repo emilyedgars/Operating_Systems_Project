@@ -140,9 +140,12 @@ if __name__ == "__main__":
     total_normal_clients = sum(attraction.total_normal_clients for attraction in attractions)
     total_priority_clients = sum(attraction.total_priority_clients for attraction in attractions)
 
+    total_park_profit = total_normal_profit + total_priority_profit
+
     print("\nSummary:")
     print(f"Total normal clients: {total_normal_clients}")
     print(f"Total priority clients: {total_priority_clients}")
     print(f"Total normal profit: ${total_normal_profit:.2f}")
     print(f"Total priority profit: ${total_priority_profit:.2f}")
-
+    print(f"Total attraction park profit: ${total_park_profit:.2f}")
+#%%
