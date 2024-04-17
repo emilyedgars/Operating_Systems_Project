@@ -84,11 +84,11 @@ class Attraction(AbstractHandler):
 
 class WaterPark(Attraction):
     def __init__(self):
-        super().__init__(capacity=10, duration=random.uniform(2, 6))
+        super().__init__(capacity=10, duration=3)
 
 class RollerCoaster(Attraction):
     def __init__(self):
-        super().__init__(capacity=3, duration=random.uniform(1, 3))
+        super().__init__(capacity=3, duration=5)
 
 class Shop(Attraction):
     def __init__(self):
@@ -111,15 +111,15 @@ class Shop(Attraction):
 
 class FerrisWheel(Attraction):
     def __init__(self):
-        super().__init__(capacity=6, duration=random.uniform(4, 8))
+        super().__init__(capacity=6, duration=3)
 
 class ArcadeGames(Attraction):
     def __init__(self):
-        super().__init__(capacity=4, duration=random.uniform(2, 5))
+        super().__init__(capacity=4, duration=4)
 
 class CircusShow(Attraction):
     def __init__(self):
-        super().__init__(capacity=15, duration=random.uniform(5, 10))
+        super().__init__(capacity=15, duration=5)
 
 def simulate_park_visit(attraction: Attraction, customer: Customer):
     attraction.handle(customer)
@@ -148,4 +148,5 @@ if __name__ == "__main__":
     print(f"Total normal profit: ${total_normal_profit:.2f}")
     print(f"Total priority profit: ${total_priority_profit:.2f}")
     print(f"Total attraction park profit: ${total_park_profit:.2f}")
+#%%
 #%%
