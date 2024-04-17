@@ -1,0 +1,126 @@
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import Optional
+import concurrent.futures
+import threading
+import time
+import random
+from datetime import datetime
+
+class Handler(ABC):
+    @abstractmethod
+    def set_next(self, handler: Handler) -> Handler:
+        pass
+
+    @abstractmethod
+    def handle(self, request) -> Optional[str]:
+        pass
+
+class AbstractHandler(Handler):
+    _next_handler: Handler = None
+
+    def set_next(self, handler: Handler) -> Handler:
+        self._next_handler = handler
+        return handler
+
+    @abstractmethod
+    def handle(self, customer: Customer) -> str:
+        if self._next_handler:
+            return self._next_handler.handle(customer)
+        return None
+
+class Customer:
+    def __init__(self, customer_id):
+        self.id = customer_id
+
+class Attraction(AbstractHandler):
+    def __init__(self, capacity: int, duration: int):
+        self.capacity = capacity
+        self.current_capacity = 0
+        self.lock = threading.Lock()
+        self.duration = duration
+
+    def handle(self, customer: Customer) -> str:
+        with self.lock:
+            if self.current_capacity >= self.capacity:
+                print(f"{self.__class__.__name__} is full. Please wait until the session is over...")
+                return "Capacity full"
+            self.current_capacity += 1
+
+        entry_time = time.time()
+        entry_time_str = datetime.fromtimestamp(entry_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"Customer {customer.id} entered the {self.__class__.__name__} at {entry_time_str}")
+
+        # Simulate the customer's visit
+        time.sleep(self.duration)
+
+        exit_time = time.time()
+        exit_time_str = datetime.fromtimestamp(exit_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"Customer {customer.id} left the {self.__class__.__name__} at {exit_time_str}")
+
+        with self.lock:
+            self.current_capacity -= 1
+
+        return super().handle(customer)
+
+class WaterPark(Attraction):
+    def __init__(self):
+        super().__init__(capacity=10, duration=3)
+
+class RollerCoaster(Attraction):
+    def __init__(self):
+        super().__init__(capacity=3, duration=2)
+
+class Shop(Attraction):
+    def __init__(self):
+        super().__init__(capacity=8, duration=1)
+
+    # Overriding handle method for random entry to the shop
+    def handle(self, customer: Customer) -> str:
+        entry_time = time.time()
+        entry_time_str = datetime.fromtimestamp(entry_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"Customer {customer.id} entered the {self.__class__.__name__} at {entry_time_str}")
+
+        # Simulate the customer's visit
+        time.sleep(self.duration)
+
+        exit_time = time.time()
+        exit_time_str = datetime.fromtimestamp(exit_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"Customer {customer.id} left the {self.__class__.__name__} at {exit_time_str}")
+
+        return super().handle(customer)
+
+class FerrisWheel(Attraction):
+    def __init__(self):
+        super().__init__(capacity=6, duration=4)
+
+class ArcadeGames(Attraction):
+    def __init__(self):
+        super().__init__(capacity=4, duration=2)
+
+class CircusShow(Attraction):
+    def __init__(self):
+        super().__init__(capacity=15, duration=5)
+
+def simulate_park_visit(customer: Customer):
+    water_park = WaterPark()
+    roller_coaster = RollerCoaster()
+    shop = Shop()
+    ferris_wheel = FerrisWheel()
+    arcade_games = ArcadeGames()
+    circus_show = CircusShow()
+
+    water_park.set_next(roller_coaster)
+    roller_coaster.set_next(shop)
+    shop.set_next(ferris_wheel)
+    ferris_wheel.set_next(arcade_games)
+    arcade_games.set_next(circus_show)
+
+    water_park.handle(customer)
+
+if __name__ == "__main__":
+    num_customers = 20
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        customers = [Customer(str(i)) for i in range(num_customers)]
+        executor.map(simulate_park_visit, customers)
+#%%
