@@ -85,13 +85,16 @@ class Attraction(AbstractHandler):
         queue_used = self.priority_queue if customer.priority_queue else self.normal_queue
         queue_used.put(customer)
 
-        while not self.priority_queue.empty():
-            priority_customer = self.priority_queue.get()
-            self.process_customer(priority_customer)
-
-        while not self.normal_queue.empty():
-            normal_customer = self.normal_queue.get()
-            self.process_customer(normal_customer)
+        # Check if there are priority customers waiting
+        if not self.priority_queue.empty():
+            while not self.priority_queue.empty():
+                priority_customer = self.priority_queue.get()
+                self.process_customer(priority_customer)
+        else:
+            # If no priority customers waiting, process normal customers
+            while not self.normal_queue.empty():
+                normal_customer = self.normal_queue.get()
+                self.process_customer(normal_customer)
 
         return super().handle(customer)
 
