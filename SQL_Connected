@@ -7,9 +7,9 @@ import queue
 from datetime import datetime
 from abc import ABC, abstractmethod
 from typing import Optional
-from faker import Faker
 import mysql.connector
 
+# Previous code
 class Handler(ABC):
     @abstractmethod
     def set_next(self, handler: Handler) -> Handler:
@@ -98,7 +98,6 @@ class Attraction(AbstractHandler):
 
         return super().handle(customer)
 
-# Attraction subclasses (WaterPark, RollerCoaster, Shop, FerrisWheel, ArcadeGames, CircusShow, FoodTruck)
 class WaterPark(Attraction):
     def __init__(self):
         super().__init__(capacity=10, duration=random.uniform(2, 6))
@@ -150,25 +149,42 @@ class CircusShow(Attraction):
         super().__init__(capacity=15, duration=random.uniform(5, 10))
         self.name = "CircusShow"
 
+# New code
+class CustomerDatabase:
+    def __init__(self):
+        self.fake = Faker()
+
+    def generate_customers(self, num_customers: int) -> list[Customer]:
+        customers = []
+        for _ in range(num_customers):
+            customer_id = self.fake.uuid4().split('-')[0]  # Using first part of UUID as ID
+            customers.append(Customer(customer_id))
+        return customers
+
 def simulate_park_visit(attraction: Attraction, customer: Customer):
     attraction.handle(customer)
 
 if __name__ == "__main__":
     num_customers = 20
-    attractions = [WaterPark(), RollerCoaster(), Shop(), FerrisWheel(), ArcadeGames(), CircusShow(), FoodTruck()]
 
+    # Create attractions and customers
+    attractions = [WaterPark(), RollerCoaster(), Shop(), FerrisWheel(), ArcadeGames(), CircusShow(), FoodTruck()]
+    customer_db = CustomerDatabase()
+    customers = customer_db.generate_customers(num_customers)
+
+    # Simulate park visits
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        for _ in range(num_customers):
-            customer = Customer(str(_))
+        for customer in customers:
             attraction = random.choice(attractions)
             executor.submit(simulate_park_visit, attraction, customer)
 
+    # Calculate and print summary statistics
     total_normal_profit = sum(attraction.total_normal_profit for attraction in attractions)
     total_priority_profit = sum(attraction.total_priority_profit for attraction in attractions)
     total_normal_clients = sum(attraction.total_normal_clients for attraction in attractions)
     total_priority_clients = sum(attraction.total_priority_clients for attraction in attractions)
-    shop_sales = next(attr.total_sales for attr in attractions if isinstance(attr, Shop))
-    total_park_profit = total_normal_profit + total_priority_profit + shop_sales  # Include shop sales in total profit
+    shop_sales = next((attr.total_sales for attr in attractions if isinstance(attr, Shop)), 0)
+    total_park_profit = total_normal_profit + total_priority_profit + shop_sales
 
     print("\nSummary:")
     print(f"Total normal clients: {total_normal_clients}")
@@ -179,18 +195,12 @@ if __name__ == "__main__":
     print(f"Total park profit: ${total_park_profit:.2f}")
 
     # Determine the most visited attraction
-    most_visited = None
-    max_visits = 0
-    for attraction in attractions:
-        if attraction.visits_count > max_visits:
-            most_visited = attraction
-            max_visits = attraction.visits_count
-
+    most_visited = max(attractions, key=lambda x: x.visits_count, default=None)
     if most_visited:
-        print(f"{most_visited.__class__.__name__} is the most visited attraction with {max_visits} visits.")
+        print(f"{most_visited.__class__.__name__} is the most visited attraction with {most_visited.visits_count} visits.")
 
     # Connect to MySQL database and insert data
-    cnx = mysql.connector.connect(user='root', password='Lehe05547407', host='127.0.0.1', database='example')
+    cnx = mysql.connector.connect(user='root', password='password', host='127.0.0.1', database='example')
     cursor = cnx.cursor()
 
     # Create AttractionPark table if not exists
@@ -222,5 +232,3 @@ if __name__ == "__main__":
     cnx.commit()
     cursor.close()
     cnx.close()
-
-#%%
