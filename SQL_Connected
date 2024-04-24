@@ -8,6 +8,7 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from typing import Optional
 import mysql.connector
+from faker import Faker
 
 # Previous code
 class Handler(ABC):
@@ -100,17 +101,17 @@ class Attraction(AbstractHandler):
 
 class WaterPark(Attraction):
     def __init__(self):
-        super().__init__(capacity=10, duration=random.uniform(2, 6))
+        super().__init__(capacity=10, duration= 6)
         self.name = "WaterPark"
 
 class RollerCoaster(Attraction):
     def __init__(self):
-        super().__init__(capacity=3, duration=random.uniform(1, 3))
+        super().__init__(capacity=3, duration=3)
         self.name = "RollerCoaster"
 
 class Shop(Attraction):
     def __init__(self):
-        super().__init__(capacity=8, duration=random.uniform(3, 7))
+        super().__init__(capacity=8, duration=7)
         self.total_sales = 0  # To track additional spending in the shop
         self.name = "Shop"
 
@@ -123,7 +124,7 @@ class Shop(Attraction):
 
 class FoodTruck(Attraction):
     def __init__(self):
-        super().__init__(capacity=5, duration=random.uniform(1, 2))
+        super().__init__(capacity=5, duration=2)
         self.food_price = 5  # Flat rate for simplicity
         self.name = "FoodTruck"
 
@@ -136,17 +137,17 @@ class FoodTruck(Attraction):
 
 class FerrisWheel(Attraction):
     def __init__(self):
-        super().__init__(capacity=6, duration=random.uniform(4, 8))
+        super().__init__(capacity=6, duration= 8)
         self.name = "FerrisWheel"
 
 class ArcadeGames(Attraction):
     def __init__(self):
-        super().__init__(capacity=4, duration=random.uniform(2, 5))
+        super().__init__(capacity=4, duration=5)
         self.name = "ArcadeGames"
 
 class CircusShow(Attraction):
     def __init__(self):
-        super().__init__(capacity=15, duration=random.uniform(5, 10))
+        super().__init__(capacity=15, duration=10)
         self.name = "CircusShow"
 
 # New code
@@ -186,7 +187,7 @@ if __name__ == "__main__":
     shop_sales = next((attr.total_sales for attr in attractions if isinstance(attr, Shop)), 0)
     total_park_profit = total_normal_profit + total_priority_profit + shop_sales
 
-    print("\nSummary:")
+    print("\nSummary:::")
     print(f"Total normal clients: {total_normal_clients}")
     print(f"Total priority clients: {total_priority_clients}")
     print(f"Total normal profit: ${total_normal_profit:.2f}")
@@ -195,40 +196,76 @@ if __name__ == "__main__":
     print(f"Total park profit: ${total_park_profit:.2f}")
 
     # Determine the most visited attraction
+    print("Calculating most visited attraction")
     most_visited = max(attractions, key=lambda x: x.visits_count, default=None)
     if most_visited:
         print(f"{most_visited.__class__.__name__} is the most visited attraction with {most_visited.visits_count} visits.")
 
     # Connect to MySQL database and insert data
-    cnx = mysql.connector.connect(user='root', password='password', host='127.0.0.1', database='example')
+    cnx = mysql.connector.connect(user='root', password='Lehe05547407', host='127.0.0.1', database='example')
     cursor = cnx.cursor()
 
-    # Create AttractionPark table if not exists
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS AttractionPark (
+        CREATE TABLE IF NOT EXISTS Attraction (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
-            total_clients INT NOT NULL,
-            total_profit DECIMAL(10, 2) NOT NULL
-        )
+            capacity INT NOT NULL,
+            duration FLOAT NOT NULL,
+            total_normal_clients INT NOT NULL,
+            total_priority_clients INT NOT NULL,
+            total_normal_profit DECIMAL(10, 2) NOT NULL,
+            total_priority_profit DECIMAL(10, 2) NOT NULL,
+            visits_count INT NOT NULL
+        );
     """)
 
-    # Insert attraction data into the database
+    # Insert attraction data into the Attraction table
     attractions_data = []
     for attraction in attractions:
         attraction_data = (
             attraction.name,
-            attraction.total_normal_clients + attraction.total_priority_clients,
-            attraction.total_normal_profit + attraction.total_priority_profit
+            attraction.capacity,
+            attraction.duration,
+            attraction.total_normal_clients,
+            attraction.total_priority_clients,
+            attraction.total_normal_profit,
+            attraction.total_priority_profit,
+            attraction.visits_count
         )
         attractions_data.append(attraction_data)
 
     cursor.executemany("""
-        INSERT INTO AttractionPark (name, total_clients, total_profit) 
-        VALUES (%s, %s, %s)
+        INSERT INTO Attraction (name, capacity, duration, total_normal_clients, total_priority_clients, total_normal_profit, total_priority_profit, visits_count) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """, attractions_data)
+
+    # Create Customer table if not exists
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Customer (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            customer_id VARCHAR(255) NOT NULL,
+            priority_queue BOOLEAN NOT NULL,
+            spending_money DECIMAL(10, 2) NOT NULL
+        );
+    """)
+
+    # Insert customer data into the Customer table
+    customers_data = []
+    for customer in customers:
+        customer_data = (
+            customer.id,
+            customer.priority_queue,
+            customer.spending_money
+        )
+        customers_data.append(customer_data)
+
+    cursor.executemany("""
+        INSERT INTO Customer (customer_id, priority_queue, spending_money) 
+        VALUES (%s, %s, %s)
+    """, customers_data)
 
     # Commit changes and close connection
     cnx.commit()
     cursor.close()
     cnx.close()
+#%%
