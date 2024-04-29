@@ -78,6 +78,9 @@ class Attraction(AbstractHandler):
         exit_time_str = datetime.fromtimestamp(self.exit_time).strftime('%Y-%m-%d %H:%M:%S')
         print(f"{customer_type} customer {customer.id} left the {self.__class__.__name__} at {exit_time_str}")
 
+        visit_duration = self.exit_time - self.entry_time
+        print(f"Customer {customer.id} spent {visit_duration:.2f} seconds at the {self.__class__.__name__}")
+
     def handle(self, customer: Customer) -> str:
         queue_used = self.priority_queue if customer.priority_queue else self.normal_queue
         queue_used.put(customer)
@@ -165,6 +168,13 @@ def simulate_park_visit(attractions: List[Attraction], customer: Customer):
     # Randomly select attractions for the customer to visit
     attractions_to_visit = random.sample(attractions, num_attractions_to_visit)
 
+    # Add customer to the appropriate queue
+    for attraction in attractions_to_visit:
+        if customer.priority_queue:  # This condition should check if the customer is a priority customer
+            attraction.priority_queue.put(customer)
+        else:
+            attraction.normal_queue.put(customer)
+
     # Visit each selected attraction
     for attraction in attractions_to_visit:
         attraction.handle(customer)
@@ -188,8 +198,8 @@ if __name__ == "__main__":
     # Calculate and print summary statistics
     total_normal_clients = sum(len(attraction.normal_queue.queue) for attraction in attractions)
     total_priority_clients = sum(len(attraction.priority_queue.queue) for attraction in attractions)
-    total_normal_profit = total_normal_clients
-    total_priority_profit = total_priority_clients * priority_price
+    total_normal_profit = total_normal_clients * 10
+    total_priority_profit = total_priority_clients * 25
     shop_sales = next((attr.total_sales for attr in attractions if isinstance(attr, Shop)), 0)
     total_park_profit = total_normal_profit + total_priority_profit + shop_sales
 
@@ -207,5 +217,3 @@ if __name__ == "__main__":
     most_visited = max(attractions, key=lambda x: x.visits_count, default=None)
     if most_visited:
         print(f"{most_visited.__class__.__name__} is the most visited attraction with {most_visited.visits_count} visits.")
-
-#%%
