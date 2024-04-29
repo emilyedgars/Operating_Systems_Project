@@ -1,0 +1,179 @@
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import Optional
+import concurrent.futures
+import threading
+import time
+import random
+import queue
+from datetime import datetime
+
+class Handler(ABC):
+    @abstractmethod
+    def set_next(self, handler: Handler) -> Handler:
+        pass
+
+    @abstractmethod
+    def handle(self, request) -> Optional[str]:
+        pass
+
+class AbstractHandler(Handler):
+    _next_handler: Handler = None
+
+    def set_next(self, handler: Handler) -> Handler:
+        self._next_handler = handler
+        return handler
+
+    @abstractmethod
+    def handle(self, customer: Customer) -> str:
+        if self._next_handler:
+            return self._next_handler.handle(customer)
+        return None
+
+class Customer:
+    def __init__(self, customer_id):
+        self.id = customer_id
+        self.priority_queue = False if random.random() < 0.7 else True  # Randomly assign priority queue
+        self.spending_money = random.randint(5, 20)  # Random spending money for the shop
+
+class Attraction(AbstractHandler):
+    def __init__(self, capacity: int, duration: int):
+        self.capacity = capacity
+        self.current_capacity = 0
+        self.lock = threading.Lock()
+        self.duration = duration
+        self.entry_time = 0
+        self.exit_time = 0
+        self.normal_price = 10
+        self.priority_price = 25
+        self.total_normal_clients = 0
+        self.total_priority_clients = 0
+        self.total_normal_profit = 0
+        self.total_priority_profit = 0
+        self.visits_count = 0  # Count of visits to this attraction
+        self.priority_queue = queue.Queue()
+        self.normal_queue = queue.Queue()
+
+    def process_customer(self, customer: Customer):
+        customer_type = "Priority" if customer.priority_queue else "Normal"
+        ticket_price = self.priority_price if customer.priority_queue else self.normal_price
+        with self.lock:
+            if self.current_capacity < self.capacity:
+                self.current_capacity += 1
+                self.visits_count += 1
+                if customer.priority_queue:
+                    self.total_priority_clients += 1
+                    self.total_priority_profit += ticket_price
+                else:
+                    self.total_normal_clients += 1
+                    self.total_normal_profit += ticket_price
+            else:
+                print(f"{self.__class__.__name__} is full. Please wait until the session is over...")
+                return "Capacity full"
+
+        self.entry_time = time.time()
+        entry_time_str = datetime.fromtimestamp(self.entry_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"{customer_type} customer {customer.id} entered the {self.__class__.__name__} at {entry_time_str}")
+
+        time.sleep(self.duration)  # Simulate the customer's visit
+
+        self.exit_time = time.time()
+        exit_time_str = datetime.fromtimestamp(self.exit_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"{customer_type} customer {customer.id} left the {self.__class__.__name__} at {exit_time_str}")
+
+        visit_duration = self.exit_time - self.entry_time
+        print(f"Customer {customer.id} spent {visit_duration:.2f} seconds at the {self.__class__.__name__}")
+
+    def handle(self, customer: Customer) -> str:
+        queue_used = self.priority_queue if customer.priority_queue else self.normal_queue
+        queue_used.put(customer)
+
+        # Check if there are priority customers waiting
+        if not self.priority_queue.empty():
+            while not self.priority_queue.empty():
+                priority_customer = self.priority_queue.get()
+                self.process_customer(priority_customer)
+        else:
+            # If no priority customers waiting, process normal customers
+            while not self.normal_queue.empty():
+                normal_customer = self.normal_queue.get()
+                self.process_customer(normal_customer)
+
+        return super().handle(customer)
+
+class WaterPark(Attraction):
+    def __init__(self):
+        super().__init__(capacity=10, duration=3)
+
+class RollerCoaster(Attraction):
+    def __init__(self):
+        super().__init__(capacity=3, duration=5)
+
+class Shop(Attraction):
+    def __init__(self):
+        super().__init__(capacity=8, duration=random.uniform(3, 7))
+        self.total_sales = 0
+
+    def process_customer(self, customer: Customer):
+        super().process_customer(customer)
+        additional_spending = customer.spending_money
+        with self.lock:
+            self.total_sales += additional_spending
+        print(f"Customer {customer.id} spent an additional ${additional_spending:.2f} in the shop.")
+
+    # Overriding handle method for random entry to the shop
+    def handle(self, customer: Customer) -> str:
+        entry_time = time.time()
+        entry_time_str = datetime.fromtimestamp(entry_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"Customer {customer.id} entered the {self.__class__.__name__} at {entry_time_str}")
+
+        # Simulate the customer's visit
+        time.sleep(self.duration)
+
+        exit_time = time.time()
+        exit_time_str = datetime.fromtimestamp(exit_time).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"Customer {customer.id} left the {self.__class__.__name__} at {exit_time_str}")
+
+        return super().handle(customer)
+
+class FerrisWheel(Attraction):
+    def __init__(self):
+        super().__init__(capacity=6, duration=3)
+
+class ArcadeGames(Attraction):
+    def __init__(self):
+        super().__init__(capacity=4, duration=4)
+
+class CircusShow(Attraction):
+    def __init__(self):
+        super().__init__(capacity=15, duration=5)
+
+def simulate_park_visit(attraction: Attraction, customer: Customer):
+    attraction.handle(customer)
+
+if __name__ == "__main__":
+    num_customers = 20
+    attractions = [WaterPark(), RollerCoaster(), Shop(), FerrisWheel(), ArcadeGames(), CircusShow()]
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for _ in range(num_customers):
+            customer = Customer(str(_))
+            attraction = random.choice(attractions)
+            executor.submit(simulate_park_visit, attraction, customer)
+
+    # Calculate and print summary statistics
+    total_normal_profit = sum(attraction.total_normal_profit for attraction in attractions)
+    total_priority_profit = sum(attraction.total_priority_profit for attraction in attractions)
+    total_normal_clients = sum(attraction.total_normal_clients for attraction in attractions)
+    total_priority_clients = sum(attraction.total_priority_clients for attraction in attractions)
+    shop_sales = next((attr.total_sales for attr in attractions if isinstance(attr, Shop)), 0)
+    total_park_profit = total_normal_profit + total_priority_profit + shop_sales
+
+    print("\nSummary:")
+    print(f"Total normal clients: {total_normal_clients}")
+    print(f"Total priority clients: {total_priority_clients}")
+    print(f"Total normal profit: ${total_normal_profit:.2f}")
+    print(f"Total priority profit: ${total_priority_profit:.2f}")
+    print(f"Total shop sales: ${shop_sales:.2f}")
+    print(f"Total profit: ${total_park_profit:.2f}")
+
