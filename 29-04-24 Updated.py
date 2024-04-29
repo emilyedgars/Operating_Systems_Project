@@ -210,7 +210,6 @@ if __name__ == "__main__":
     print(f"Total normal profit: ${total_normal_profit:.2f}")
     print(f"Total priority profit: ${total_priority_profit:.2f}")
     print(f"Total shop sales: ${shop_sales:.2f}")
-    print(f"Total park profit: ${total_park_profit:.2f}")
 
     # Determine the most visited attraction
     print("\nCalculating most visited attraction")
