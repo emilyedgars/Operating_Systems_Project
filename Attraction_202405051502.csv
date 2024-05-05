@@ -1,0 +1,8 @@
+"id","name","capacity","duration","total_normal_clients","total_priority_clients","total_normal_profit","total_priority_profit","visits_count"
+1,WaterPark,10,6.0,4,5,40.00,125.00,9
+2,RollerCoaster,3,3.0,3,0,30.00,0.00,3
+3,Shop,8,7.0,4,4,40.00,100.00,8
+4,FerrisWheel,6,8.0,2,4,20.00,100.00,6
+5,ArcadeGames,4,5.0,2,2,20.00,50.00,4
+6,CircusShow,15,10.0,3,5,30.00,125.00,8
+7,FoodTruck,5,2.0,13,3,130.00,75.00,5
