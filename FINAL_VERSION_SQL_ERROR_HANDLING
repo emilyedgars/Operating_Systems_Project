@@ -195,19 +195,6 @@ class CircusShow(Attraction):
         super().__init__(capacity=15, duration=10)
         self.name = "CircusShow"
 
-
-class CustomerDatabase:
-    def __init__(self):
-        self.fake = Faker()
-
-    def generate_customers(self, num_customers: int) -> list[Customer]:
-        customers = []
-        for _ in range(num_customers):
-            customer_id = self.fake.uuid4().split('-')[0]  # Using first part of UUID as ID
-            customers.append(Customer(customer_id))
-        return customers
-
-
 def simulate_park_visit(attractions: List[Attraction], customer: Customer, cashier: Cashier):
     try:
         # Determine how many attractions the customer will visit
